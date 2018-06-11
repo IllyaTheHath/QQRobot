@@ -14,6 +14,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pic", "pic", "{10DBDFC6-FBC3-4431-8919-3C72915B3593}"
 	ProjectSection(SolutionItems) = preProject
 		pic\pic1.png = pic\pic1.png
+		pic\pic2.png = pic\pic2.png
 	EndProjectSection
 EndProject
 Global

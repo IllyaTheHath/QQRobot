@@ -1,2 +1,35 @@
-# QQRobot
-.net core版本qq机器人
+# [QQRobot](https://github.com/IllyaTheHath/QQRobot)
+
+## 简介
+[QQRobot](https://github.com/IllyaTheHath/QQRobot) 是一个基于 dotnet core 2.0 框架开发的 QQ 聊天机器人
+目前阶段功能实现：
+* 图灵聊天机器人：监听 QQ 群消息，发现有带有机器人名字的内容时通过图灵机器人进行智能回复
+* 群消息复读机：监听 QQ 群消息，随机(5%几率)复读群成员说的话
+
+## 截图
+![截图1](https://github.com/IllyaTheHath/QQRobot/blob/master/pic/pic1.png)
+![截图2](https://github.com/IllyaTheHath/QQRobot/blob/master/pic/pic2.png)
+
+## 启动
+* 安装 dotnet core 运行环境
+* 下载二进制文件 或 下载源码手动编译
+* 对二进制文件加入执行权限(Linux/OSX)
+* 修改配置文件
+* 运行程序，然后根据输出提示进行扫码登录
+
+## 配置
+配置文件为 config.ini：
+* qqbotName   qq机器人名字
+* qqbotType   qq机器人类型，1=图灵机器人，2=复读机I型，3=复读机II型
+* workGroup   工作群组，以","分隔
+* turing.api  图灵机器人的 API 地址
+* turing.key  图灵机器人的 API-Key
+
+## Issues
+由于各种原因，并没能进行完善的测试，目前只在 Win10 1803 x64 环境下使用，暂时未发现大问题，如使用中发现问题欢迎提 Issue
+
+## 鸣谢
+QQRobot的开发离不开以下项目：
+* [DumbQQ-Core](https://github.com/rmbadmin/DumbQQ-Core)：对 SmartQQ API 的 C# 封装(dotnet core版本)
+* [xiaov](https://github.com/b3log/xiaov)：一个用 Java 写的 QQ 聊天机器人 Web 服务，QQRobot的开发参考了此项目
+* [图灵机器人](http://www.tuling123.com)：实现聊天智能回复功能
