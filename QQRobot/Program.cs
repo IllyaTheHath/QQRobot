@@ -36,7 +36,6 @@ namespace QQRobot
         private static void CurrentDomain_ProcessExit(Object sender, EventArgs e)
         {
             logger.Debug("Exiting");
-            Console.ReadLine();
             service.CloseQQClient();
         }
     }

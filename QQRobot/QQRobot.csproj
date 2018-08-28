@@ -8,7 +8,7 @@
     <RootNamespace>QQRobot</RootNamespace>
     <Company />
     <Authors>SharedInfo.Authors</Authors>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Copyright>SharedInfo.CopyRight</Copyright>
     <PackageProjectUrl>SharedInfo.PackageProjectUrl</PackageProjectUrl>
