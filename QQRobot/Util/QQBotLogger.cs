@@ -5,7 +5,7 @@ namespace QQRobot.Util
 {
     internal sealed class QQBotLogger
     {
-        private readonly Logger logger;
+        private Logger logger;
 
         internal QQBotLogger(String name)
         {

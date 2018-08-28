@@ -1,5 +1,6 @@
 ﻿using DumbQQ.Client;
 using DumbQQ.Models;
+using QQRobot.Service.Bot;
 using QQRobot.Util;
 using System;
 using System.Collections.Generic;
@@ -15,22 +16,39 @@ namespace QQRobot.Service
      **/
     internal sealed class QQService
     {
-        private class UserInfo
+        private QQBotLogger logger;
+        private DumbQQClient client;
+        
+        private String botName { get; set; }
+        private BotType botType { get; set; }
+        private List<String> workGroups { get; set; }
+
+        private BotService botService;
+
+        public QQService()
         {
-            public Int64 UserID { get; set; }
-            public String NickName { get; set; }
-            public String Gender { get; set; }
+            this.logger = new QQBotLogger(nameof(QQService));
+            this.botName = 
+                IniParse.INIGetValue(SharedInfo.ConfigFile, "GlobalConfig", "BotName");
+            this.botType =
+                (BotType)IniParse.INIGetValue(SharedInfo.ConfigFile, "BotTypes", 
+                    IniParse.INIGetValue(SharedInfo.ConfigFile, "GlobalConfig", "BotType"));
+            this.workGroups = 
+                new List<string>(IniParse.INIGetValue(SharedInfo.ConfigFile, "GlobalConfig", "WorkGroup").Split(','));
         }
 
-        private static QQBotLogger logger = new QQBotLogger(nameof(QQService));
-        private static DumbQQClient client;
-        private static UserInfo userInfo = new UserInfo();
-
-        public static void StartQQBot(DumbQQClient dclient)
+        public void StartQQBot()
         {
-            client = dclient;
             // 初始化QQ机器人
-            InitQQClient();
+            logger.Info("初始化QQ机器人");
+            logger.Debug($"机器人类型为:{botType.Type}");
+            client = new DumbQQClient();
+            botService = BotService.GetServiceInstance(botType.Name);
+
+            // 好友消息回调
+            client.FriendMessageReceived += OnFriendMessage;
+            // 群消息回调
+            client.GroupMessageReceived += OnGroupMessage;
 
             // 二维码登录
             var result = QrCode.Login(client);
@@ -45,45 +63,37 @@ namespace QQRobot.Service
                     Environment.Exit(1);
                     return;
             }
-            // 获取用户信息
-            userInfo = new UserInfo()
+
+            // 上线提醒
+            String hello = $"机器人{botName}开始工作，当前工作模式：{botService.Introduction}";
+            foreach(var group in client.Groups)
             {
-                UserID = client.Id,
-                NickName = client.Nickname,
-                Gender = client.Gender
-            };
+                if (workGroups.Contains(group.MyAlias ?? group.Name))
+                {
+                    logger.Debug($"{group.Name}>>上线提醒:{hello}");
+                    SendMessageToGroup(group.Id, hello);
+                }
+            }
         }
 
-        public static void InitQQClient()
+        public void CloseQQClient()
         {
-            logger.Info("初始化QQ机器人");
-            // 机器人名字
-            BotConfig.BotName = IniParse.INIGetValue(SharedInfo.ConfigFile, "config", "qqbotName");
-            // 机器人类型
-            BotConfig.BotType = Int32.Parse(IniParse.INIGetValue(SharedInfo.ConfigFile, "config", "qqbotType"));
-            logger.Debug($"机器人类型为:{BotConfig.BotType}");
-            // 获取工作群组
-            BotConfig.WorkGroups = GetWorkGroups();
-            // 获取图灵机器人设置
-            BotConfig.TuringApi = IniParse.INIGetValue(SharedInfo.ConfigFile, "config", "turing.api");
-            BotConfig.TuringKey = IniParse.INIGetValue(SharedInfo.ConfigFile, "config", "turing.key");
-            // 好友消息回调
-            client.FriendMessageReceived += OnFriendMessage;
-            // 群消息回调
-            client.GroupMessageReceived += OnGroupMessage;
-            //// 消息回显
-            //client.MessageEcho += (sender, e) =>
-            //{
-            //    Console.WriteLine($"{DateTime.Now}>{e.Target.Name}>{e.Content}");
-            //};
+            if (client.Status == DumbQQClient.ClientStatus.Active)
+            {
+                String goodbye = $"机器人{botName}已下线";
+                foreach (var group in client.Groups)
+                {
+                    if (workGroups.Contains(group.MyAlias ?? group.Name))
+                    {
+                        logger.Debug($"{group.Name}>>下线提醒:{goodbye}");
+                        SendMessageToGroup(group.Id, goodbye);
+                    }
+                }
+                client.Close();
+            }
         }
 
-        public static void CloseQQClient()
-        {
-            client.Close();
-        }
-
-        private static void OnFriendMessage(Object sender, FriendMessage message)
+        private void OnFriendMessage(Object sender, FriendMessage message)
         {
             var alias = message.Sender.Alias;
             var nickName = message.Sender.Nickname;
@@ -92,7 +102,7 @@ namespace QQRobot.Service
             logger.Info($"{nameof(OnFriendMessage)}>>{alias ?? nickName}:{content}");
         }
 
-        private static void OnGroupMessage(Object sender, GroupMessage message)
+        private void OnGroupMessage(Object sender, GroupMessage message)
         {
             var groupName = message.Group.Name;
             var groupId = message.Group.Id;
@@ -101,61 +111,36 @@ namespace QQRobot.Service
             var senderName = message.Sender.Nickname;
             var content = message.Content;
 
-            foreach(var g in BotConfig.WorkGroups)
+            if (workGroups.Contains(groupName))
             {
-                if (groupName == g)
+                if (senderId != client.Id)
                 {
-                    if (senderId != userInfo.UserID)
+                    logger.Info($"{nameof(OnGroupMessage)}>>{groupName}>>{senderAlias ?? senderName}:{content}");
+                    var msg = Answer(message);
+                    if (String.IsNullOrEmpty(msg))
                     {
-                        logger.Info($"{nameof(OnGroupMessage)}>>{groupName}>>{senderAlias ?? senderName}:{content}");
-                        var msg = Answer(content, groupName);
-                        if (String.IsNullOrEmpty(msg))
-                        {
-                            return;
-                        }
-                        SendMessageToGroup(groupId, msg);
+                        return;
                     }
-                    else
-                    {
-                        logger.Debug("不回复自己说的话");
-                    }
-                    return;
+                    SendMessageToGroup(groupId, msg);
                 }
+                else
+                {
+                    logger.Debug("不回复自己说的话");
+                }
+                return;
             }
-            logger.Debug($"{nameof(OnGroupMessage)}>>{groupName}>>{senderAlias ?? senderName}:{content}");
+
             logger.Debug($"群组 [{groupName}] 不在工作群组内");
         }
 
-        private static String Answer(String content, String groupName)
+        private String Answer(GroupMessage message)
         {
-            String msg = String.Empty;
-
-            switch (BotConfig.BotType)
-            {
-                case 1:
-                    msg = TuringService.Chat(content, groupName);
-                    break;
-                case 2:
-                    msg = RepeatService.Chat(content, groupName);
-                    break;
-                case 3:
-                    msg = RepeatMarkIIService.Chat(content, groupName);
-                    break;
-            }
-
-            return msg;
+            return botService.Chat(message);
         }
 
-        private static void SendMessageToGroup(Int64 groupID, String content)
+        private void SendMessageToGroup(Int64 groupID, String content)
         {
             client.Message(DumbQQClient.TargetType.Group, groupID, content);
-        }
-
-        private static List<String> GetWorkGroups()
-        {
-            var groups = IniParse.INIGetValue(SharedInfo.ConfigFile, "config", "workGroup");
-            logger.Debug($"工作群组为: {groups}");
-            return new List<string>(groups.Split(','));
         }
     }
 }

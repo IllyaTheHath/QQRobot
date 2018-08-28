@@ -2,21 +2,25 @@
 using QQRobot.Service;
 using QQRobot.Util;
 using System;
+using System.Runtime.Loader;
 
 namespace QQRobot
 {
     public class Program
     {
-        public static readonly DumbQQClient client = new DumbQQClient { CacheTimeout = TimeSpan.FromDays(1) };
-        private static QQBotLogger logger = new QQBotLogger(SharedInfo.AppName);
+        private static QQBotLogger logger;
+        private static QQService service;
 
         public static void Main(string[] args)
         {
+            logger = new QQBotLogger(SharedInfo.AppName);
+            service = new QQService();
+
             // 程序退出时关闭客户端
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
             Console.CancelKeyPress += CurrentDomain_ProcessExit;
             // 启动服务
-            QQService.StartQQBot(client);
+            service.StartQQBot();
             // 防止程序终止
             logger.Info("程序正在运行，输入exit退出");
             while (true)
@@ -28,14 +32,12 @@ namespace QQRobot
                 }
             }
         }
-
+        
         private static void CurrentDomain_ProcessExit(Object sender, EventArgs e)
         {
             logger.Debug("Exiting");
-            if (client.Status == DumbQQClient.ClientStatus.Active)
-            {
-                QQService.CloseQQClient();
-            }
+            Console.ReadLine();
+            service.CloseQQClient();
         }
     }
 }

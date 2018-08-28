@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace QQRobot
+namespace QQRobot.Util
 {
     internal static class SharedInfo
     {
