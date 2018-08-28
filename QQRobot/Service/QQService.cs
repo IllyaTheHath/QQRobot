@@ -41,7 +41,7 @@ namespace QQRobot.Service
         {
             // 初始化QQ机器人
             logger.Info("初始化QQ机器人");
-            logger.Debug($"机器人类型为:{botType.Type}");
+            logger.Info($"机器人类型为:{botType.Type}");
             client = new DumbQQClient();
             botService = BotService.GetServiceInstance(botType.Name);
 
@@ -68,7 +68,7 @@ namespace QQRobot.Service
             String hello = $"机器人{botName}开始工作，当前工作模式：{botService.Introduction}";
             foreach(var group in client.Groups)
             {
-                if (workGroups.Contains(group.MyAlias ?? group.Name))
+                if (workGroups.Contains(group.Name))
                 {
                     logger.Debug($"{group.Name}>>上线提醒:{hello}");
                     SendMessageToGroup(group.Id, hello);
@@ -83,7 +83,7 @@ namespace QQRobot.Service
                 String goodbye = $"机器人{botName}已下线";
                 foreach (var group in client.Groups)
                 {
-                    if (workGroups.Contains(group.MyAlias ?? group.Name))
+                    if (workGroups.Contains(group.Name))
                     {
                         logger.Debug($"{group.Name}>>下线提醒:{goodbye}");
                         SendMessageToGroup(group.Id, goodbye);
